@@ -1,0 +1,505 @@
+---
+title: "STAT 232"
+author: "Suyash Saxena"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+**Introduction /n The ride-hailing industry has revolutionized the way people travel, providing convenient, on-demand transportation services at the click of a button. In the city of Boston, two of the biggest players in this industry are Uber and Lyft, both offering their own unique services to customers. /n The Uber vs Lyft dataset for the city of Boston, MA provides a rich source of information about the rides taken by these two companies from November 2018 to February 2019. The dataset comprises information about Uber rides, Lyft rides, and weather data for the city during the specified time period./n The data in this dataset includes important details about the rides such as date and time, pickup and dropoff locations, distance traveled, fare, and type of ride. This dataset can be used to explore various trends and patterns in the usage of ride-hailing services, such as the popularity of shared rides and factors that affect the frequency and cost of rides./n By analyzing this dataset, our team aims to gain insights into the ride-hailing industry in Boston, including the demand for these services, the effectiveness of pricing strategies, and the impact of external factors such as weather on ride usage. The findings of this analysis can be used to inform business decisions for both Uber and Lyft, as well as provide useful information for policymakers and researchers interested in the ride-hailing industry.**
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+options(tibble.print_max = Inf)
+```
+
+```{r}
+rideshare <- read_csv("D:/Courses/Statistics for Business Analytics STAT 232/Final project/rideshare_kaggle.csv")
+```
+```{r}
+ rideshare_unique <-  na.omit(rideshare) 
+ rideshare_unique %>% distinct()
+```
+
+```{r}
+print(paste("Removed", nrow(rideshare) - nrow(rideshare_unique), " rows"))
+```
+
+```{r}
+str(rideshare_unique)
+```
+
+```{r}
+rideshare_unique %>% group_by(cab_type) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100)
+```
+
+```{r}
+ ggplot(rideshare_unique, aes(cab_type, fill=cab_type)) +
+    geom_bar() +
+    labs(x="Uber Vs Lyft", title="Uber Vs Lyft distribution")
+```
+```{r}
+rideshare_unique %>% group_by(hour) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100)
+```
+```{r}
+ rideshare_unique %>%
+    ggplot(aes(hour, fill=cab_type)) +
+    labs(x="Starting hour", title="rides by hour of the day") +
+    geom_bar()+
+    facet_wrap(~cab_type)
+```
+```{r}
+rideshare_unique %>% group_by(day) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100)
+
+```
+```{r}
+ rideshare_unique %>% group_by(source) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100) 
+
+```
+```{r}
+rideshare_unique %>%
+    ggplot(aes(source, fill=cab_type)) +
+    labs(x="pickup point", title="rides by pickup points(source)") +
+    geom_bar()+
+    coord_flip()
+```
+```{r}
+rideshare_unique %>% group_by(destination) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100) 
+```
+```{r}
+rideshare_unique %>%
+    ggplot(aes(destination, fill=cab_type)) +
+    labs(x="destination", title="rides by destination") +
+    geom_bar()+
+    coord_flip()
+```
+```{r}
+rideshare_unique %>% group_by(source,destination)%>% 
+    summarise(mean = mean(price))%>%
+    print(n=Inf) 
+```
+```{r}
+rideshare_unique %>%  
+    summarise(min=min(price),
+              max=max(price))
+
+```
+```{r}
+ rideshare_unique %>% group_by(short_summary) %>% 
+    summarise(count = length(id),
+              '%' = (length(id) / nrow(rideshare_unique)) * 100) 
+```
+```{r}
+rideshare_unique %>%
+    ggplot(aes(short_summary, fill=cab_type)) +
+    labs(x="weather", title="rides by weather") +
+    geom_bar()+
+    coord_flip()
+```
+##Second Visualization
+
+```{r}
+library(ggplot2) 
+library(plotly) 
+library(leaflet) 
+library(ggmap) 
+library(ggmap) 
+library(dplyr) 
+library(tidyr) 
+library(randomForest) 
+```
+
+```{r}
+library(tree) 
+library(caret)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+data_month_counts <- rideshare %>%
+  group_by(month) %>%
+  summarise(counts = n())
+
+# Create bar plot using ggplot2
+ggplot(data_month_counts, aes(x = month, y = counts)) +
+  geom_bar(stat = "identity", fill = "dodgerblue") +
+  labs(title = "Month Counts", x = "Month", y = "Count")
+```
+
+```{r}
+data_day_counts <- rideshare %>%
+  group_by(day) %>%
+  summarise(counts = n())
+
+
+ggplot(data_day_counts, aes(x = day, y = counts)) +
+  geom_bar(stat = "identity", fill = "dodgerblue") +
+  labs(title = "Day Counts", x = "Day", y = "Count")
+```
+```{r}
+data_hour_counts <- rideshare %>%
+  group_by(hour) %>%
+  summarise(counts = n())
+
+# Create bar plot using ggplot2
+ggplot(data_hour_counts, aes(x = hour, y = counts)) +
+  geom_bar(stat = "identity", fill = "dodgerblue") +
+  labs(title = "Hour Counts", x = "Hour", y = "Count")
+```
+
+```{r}
+df <- rideshare%>%
+  group_by(day, cab_type) %>%
+  summarise(counts = n())
+
+# Create grouped bar plot using plotly
+plot_ly(df, x = ~day, y = ~counts, color = ~cab_type, type = "bar", barmode = "group") %>%
+  layout(title = "Cab Type Counts by Day", xaxis = list(title = "Day"), yaxis = list(title = "Count"))
+```
+```{r}
+df <- rideshare %>% 
+  filter(hour >= 22 | hour <= 4)
+
+ggplot(data = df, aes(x = distance, y = price, color = cab_type, size = surge_multiplier)) +
+  geom_point() +
+  labs(title = "Price vs. Distance during Late-Night Hours",
+       x = "Distance", y = "Price") +
+  theme_bw()
+```
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+# Reading in the data using the read.csv function
+df <- read.csv("D:/Courses/Statistics for Business Analytics STAT 232/Final project/rideshare_kaggle.csv")
+
+# Using R's "head" function to display the first 6 rows of the data
+head(df)
+```
+```{r}
+# Using R's "str" function to display information about the data types and missing values
+str(df)
+```
+```{r}
+# Converting the 'datetime' column to a datetime object using the as.POSIXct function
+df$datetime <- as.POSIXct(df$datetime)
+```
+
+```{R}
+# Calculating the total number of missing values in the dataframe
+sum(is.na(df))
+```
+```{R}
+# Removing rows with missing values
+df <- na.omit(df)
+```
+
+```{R}
+# Checking the total number of missing values in the dataframe after removing rows with missing values
+sum(is.na(df))
+```
+```{R}
+# Displaying the first 5 rows of the 'visibility' column
+head(df$visibility)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(df, select = -c(id, timestamp, datetime, long_summary, apparentTemperatureHighTime,
+                                 apparentTemperatureLowTime, windGustTime, sunriseTime, sunsetTime,
+                                 uvIndexTime, temperatureMinTime, temperatureMaxTime,
+                                 apparentTemperatureMinTime, temperatureLowTime,
+                                 apparentTemperatureMaxTime))
+# Displaying the number of rows and columns in the dataframe
+dim(new_df)
+```
+
+```{r}
+# Creating a vector of column names
+temp_cols <- c('temperature', 'apparentTemperature', 'temperatureHigh', 'temperatureLow',
+               'apparentTemperatureHigh', 'apparentTemperatureLow', 'temperatureMin',
+               'temperatureHighTime', 'temperatureMax', 'apparentTemperatureMin',
+               'apparentTemperatureMax', 'price')
+```
+
+```{r}
+# Selecting the columns specified in 'temp_cols' from the dataframe
+df_temp <- new_df[, temp_cols]
+
+# Using R's "head" function to display the first 6 rows of the selected columns
+head(df_temp)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(temperature, apparentTemperature, temperatureHigh, temperatureLow,
+                                     apparentTemperatureHigh, apparentTemperatureLow, temperatureMin,
+                                     temperatureHighTime, temperatureMax, apparentTemperatureMin,
+                                     apparentTemperatureMax))
+
+# Displaying the dimensions of the dataframe
+dim(new_df)
+```
+
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(precipIntensity, precipProbability, humidity, windSpeed, windGust,
+                                      visibility, dewPoint, pressure, windBearing, cloudCover, uvIndex, ozone,
+                                      moonPhase, precipIntensityMax))
+
+# Checking the dimensions of the updated dataframe
+dim(new_df)
+```
+```{r}
+# Selecting the columns with 'object' or 'factor' data types
+category_col <- names(Filter(function(x) is.factor(x) | is.character(x), new_df))
+
+# Looping through each categorical column
+for (column in category_col) {
+  # Printing the unique values in the column
+  cat(paste(column, ":", unique(new_df[, column])), "\n\n")
+}
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(timezone, product_id))
+
+# Displaying the dimensions of the updated dataframe
+dim(new_df)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(source, destination, short_summary, icon))
+
+# Displaying the first 6 rows of the updated dataframe
+head(new_df)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(hour, day, month, latitude, longitude))
+
+# Displaying the first 6 rows of the updated dataframe
+head(new_df)
+```
+
+```{r}
+# Calculating the first quartile, third quartile, and interquartile range of the 'price' column
+Qp12 <- quantile(new_df$price, 0.25)
+Qp32 <- quantile(new_df$price, 0.75)
+IQRp <- Qp32 - Qp12
+
+# Identifying rows with price values greater than the upper bound of the boxplot
+new_df[new_df$price > (Qp32 + (1.5 * IQRp)), ]
+
+# Identifying rows with price values less than the lower bound of the boxplot
+new_df[new_df$price < (Qp12 - (1.5 * IQRp)), ]
+
+# Displaying the size of the dataframe before removing outliers
+cat('Size before removing:', dim(new_df), '\n')
+
+# Removing rows with price values greater than the upper bound of the boxplot
+new_df <- new_df[!(new_df$price > (Qp32 + (1.5 * IQRp))), ]
+
+# Displaying the size of the dataframe after removing outliers
+cat('Size after removing:', dim(new_df))
+```
+
+```{R}
+one_hot_encoder <- function(data, feature, keep_first = TRUE){
+  
+  one_hot_cols <- data.frame(model.matrix(~data[[feature]]+0))
+  colnames(one_hot_cols) <- paste0(feature, "_", colnames(one_hot_cols))
+  
+  new_data <- cbind(data, one_hot_cols)
+  new_data[, feature] <- NULL
+  
+  if(!keep_first){
+    new_data <- new_data[, -1]
+  }
+  
+  return(new_data)
+}
+```
+
+```{r}
+new_df_onehot <- new_df
+
+for (col in names(new_df_onehot)[sapply(new_df_onehot, is.character)]) {
+  new_df_onehot <- one_hot_encoder(new_df_onehot, col)
+}
+
+head(new_df_onehot)
+```
+
+```{r}
+library(caret)
+library(glmnet)
+set.seed(232)
+
+X <- new_df_onehot[,!(names(new_df_onehot) == "price")]
+y <- new_df_onehot$price
+
+train_index <- createDataPartition(y, p = 0.7, list = FALSE)
+X_train <- X[train_index,]
+X_test <- X[-train_index,]
+y_train <- y[train_index]
+y_test <- y[-train_index]
+```
+
+```{r}
+set.seed(232)
+# Fit linear regression model on the training data
+model <- lm(price ~ ., data = new_df_onehot[train_index,])
+
+# Make predictions on the testing data
+y_pred <- predict(model, X_test)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+```{r}
+set.seed(232)
+# Fit the Lasso regression model on the training data
+lasso_model <- glmnet(X_train, y_train, alpha = 1)
+
+# Convert X_test to matrix object
+X_test_matrix <- as.matrix(X_test)
+
+# Make predictions on the testing data
+y_pred <- predict(lasso_model, newx = X_test_matrix)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+```{r}
+library(caret)
+set.seed(232)
+
+# Load data
+data <- new_df_onehot
+X <- data[, !(names(data) == "price")]
+y <- data$price
+
+# Define training control
+train_control <- trainControl(method = "cv",  # Cross-validation method
+                              number = 10,    # Number of folds
+                              verboseIter = TRUE,  # Print progress
+                              returnResamp = "all",  # Return all resamples
+                              savePredictions = TRUE)  # Save predictions for later use
+
+# Train linear regression model using 10-fold cross-validation
+model <- train(X, y,
+               method = "lm",  # Linear regression
+               trControl = train_control)
+
+# Print cross-validation results
+print(model)
+
+# Extract performance metrics
+mse <- mean(model$resample$RMSE^2)
+rmse <- mean(model$resample$RMSE)
+r_squared <- mean(model$resample$Rsquared)
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+
+```{r}
+library(rpart)
+set.seed(232)
+
+# Convert the matrix to a data frame
+train_df <- as.data.frame(new_df_onehot[train_index,])
+test_df <- as.data.frame(new_df_onehot[-train_index,])
+
+# Create a decision tree model on the training data
+model <- rpart(price ~ ., data = train_df)
+
+# Make predictions on the testing data
+y_pred <- predict(model, data=test_df)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- 1 - (sum((y_test - y_pred)^2) / sum((y_test - mean(y_test))^2))
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+
+# Plot the decision tree
+plot(model, main="Decision Tree", uniform=TRUE)
+text(model, use.n=TRUE, all=TRUE, cex=.8)
+```
+**The R-squared value can also be negative, which means that the model fits the data worse than a horizontal line. This can happen when the model is a poor fit for the data or when the data has a lot of noise.**
+```{r}
+# Load required packages
+library(xgboost)
+library(caret)
+
+# Set seed for reproducibility
+set.seed(232)
+
+# Define xgboost parameters
+params <- list(
+  objective = "reg:squarederror", # regression task with squared loss
+  eta = 0.3, # learning rate
+  max_depth = 6, # maximum depth of tree
+  min_child_weight = 1, # minimum sum of instance weight needed in a child
+  subsample = 0.8, # subsample ratio of the training instances
+  colsample_bytree = 0.8 # subsample ratio of columns when constructing each tree
+)
+
+# Train the xgboost model
+model <- xgboost(data = as.matrix(X_train), label = y_train, params = params, nrounds = 100)
+
+# Make predictions on the testing data
+y_pred <- predict(model, as.matrix(X_test))
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+
+**Here we got our best model is Xgboost with highest r-squared 0.964.**

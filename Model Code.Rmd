@@ -1,0 +1,345 @@
+---
+title: "STAT 232"
+author: "KSSV"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+options(tibble.print_max = Inf)
+```
+
+
+```{r pressure, echo=FALSE}
+# Reading in the data using the read.csv function
+df <- read.csv("D:/Courses/Statistics for Business Analytics STAT 232/Final project/rideshare_kaggle.csv")
+
+# Using R's "head" function to display the first 6 rows of the data
+head(df)
+```
+```{r}
+# Using R's "str" function to display information about the data types and missing values
+str(df)
+```
+```{r}
+# Converting the 'datetime' column to a datetime object using the as.POSIXct function
+df$datetime <- as.POSIXct(df$datetime)
+```
+**This code converts the datetime column in a data frame (df) to a datetime object using the as.POSIXct() function in R. This is typically done when the datetime column is in a character or factor format and needs to be converted to a format that can be manipulated and analyzed as a datetime object.\n The as.POSIXct() function takes a character or factor input and returns a datetime object. It requires two arguments: the first argument is the character or factor to be converted, and the second argument is the format of the character or factor. In this code snippet, the function is applied to the datetime column of the df data frame without specifying the format argument, which means that the function will use the default format of %Y-%m-%d %H:%M:%S to convert the column to a datetime object.\n The resulting datetime column in the data frame will now be in a format that can be manipulated using datetime functions and plotted as a time series.**
+
+```{R}
+# Calculating the total number of missing values in the dataframe
+sum(is.na(df))
+```
+```{R}
+# Removing rows with missing values
+df <- na.omit(df)
+```
+
+```{R}
+# Checking the total number of missing values in the dataframe after removing rows with missing values
+sum(is.na(df))
+```
+```{R}
+# Displaying the first 5 rows of the 'visibility' column
+head(df$visibility)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(df, select = -c(id, timestamp, datetime, long_summary, apparentTemperatureHighTime,
+                                 apparentTemperatureLowTime, windGustTime, sunriseTime, sunsetTime,
+                                 uvIndexTime, temperatureMinTime, temperatureMaxTime,
+                                 apparentTemperatureMinTime, temperatureLowTime,
+                                 apparentTemperatureMaxTime))
+# Displaying the number of rows and columns in the dataframe
+dim(new_df)
+```
+
+```{r}
+# Creating a vector of column names
+temp_cols <- c('temperature', 'apparentTemperature', 'temperatureHigh', 'temperatureLow',
+               'apparentTemperatureHigh', 'apparentTemperatureLow', 'temperatureMin',
+               'temperatureHighTime', 'temperatureMax', 'apparentTemperatureMin',
+               'apparentTemperatureMax', 'price')
+```
+
+```{r}
+# Selecting the columns specified in 'temp_cols' from the dataframe
+df_temp <- new_df[, temp_cols]
+
+# Using R's "head" function to display the first 6 rows of the selected columns
+head(df_temp)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(temperature, apparentTemperature, temperatureHigh, temperatureLow,
+                                     apparentTemperatureHigh, apparentTemperatureLow, temperatureMin,
+                                     temperatureHighTime, temperatureMax, apparentTemperatureMin,
+                                     apparentTemperatureMax))
+
+# Displaying the dimensions of the dataframe
+dim(new_df)
+```
+
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(precipIntensity, precipProbability, humidity, windSpeed, windGust,
+                                      visibility, dewPoint, pressure, windBearing, cloudCover, uvIndex, ozone,
+                                      moonPhase, precipIntensityMax))
+
+# Checking the dimensions of the updated dataframe
+dim(new_df)
+```
+```{r}
+# Selecting the columns with 'object' or 'factor' data types
+category_col <- names(Filter(function(x) is.factor(x) | is.character(x), new_df))
+
+# Looping through each categorical column
+for (column in category_col) {
+  # Printing the unique values in the column
+  cat(paste(column, ":", unique(new_df[, column])), "\n\n")
+}
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(timezone, product_id))
+
+# Displaying the dimensions of the updated dataframe
+dim(new_df)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(source, destination, short_summary, icon))
+
+# Displaying the first 6 rows of the updated dataframe
+head(new_df)
+```
+```{r}
+# Removing the specified columns from the dataframe
+new_df <- subset(new_df, select = -c(hour, day, month, latitude, longitude))
+
+# Displaying the first 6 rows of the updated dataframe
+head(new_df)
+```
+
+```{r}
+# Calculating the first quartile, third quartile, and interquartile range of the 'price' column
+Qp12 <- quantile(new_df$price, 0.25)
+Qp32 <- quantile(new_df$price, 0.75)
+IQRp <- Qp32 - Qp12
+
+# Identifying rows with price values greater than the upper bound of the boxplot
+new_df[new_df$price > (Qp32 + (1.5 * IQRp)), ]
+
+# Identifying rows with price values less than the lower bound of the boxplot
+new_df[new_df$price < (Qp12 - (1.5 * IQRp)), ]
+
+# Displaying the size of the dataframe before removing outliers
+cat('Size before removing:', dim(new_df), '\n')
+
+# Removing rows with price values greater than the upper bound of the boxplot
+new_df <- new_df[!(new_df$price > (Qp32 + (1.5 * IQRp))), ]
+
+# Displaying the size of the dataframe after removing outliers
+cat('Size after removing:', dim(new_df))
+```
+**The code calculates the first quartile (Q1), third quartile (Q3), and interquartile range (IQR) of the 'price' column in the 'new_df' data frame. These values are used to identify outliers in the 'price' column.\n The first quartile (Q1) is the 25th percentile, which means that 25% of the data is below this value, and the rest is above. The third quartile (Q3) is the 75th percentile, which means that 75% of the data is below this value, and the rest is above. The interquartile range (IQR) is the difference between Q3 and Q1.\n The code then identifies rows in the 'new_df' data frame where the 'price' value is greater than the upper bound of the boxplot. The upper bound is calculated as Q3 + (1.5 * IQR). Any value above this upper bound is considered an outlier and is identified by the code. \n This code is identifying rows in a data frame new_df with price values that are outliers, specifically values that are greater than the upper bound or less than the lower bound of the boxplot. \n The first quartile (Q1) and third quartile (Q3) of the price column are calculated using the quantile() function with arguments new_df$price and 0.25/0.75, respectively. The interquartile range (IQR) is then calculated as the difference between Q3 and Q1.\n The code then identifies rows where the price value is greater than the upper bound of the boxplot, which is calculated as Q3 plus 1.5 times the IQR. Similarly, it identifies rows where the price value is less than the lower bound of the boxplot, which is calculated as Q1 minus 1.5 times the IQR.**
+
+
+```{R}
+one_hot_encoder <- function(data, feature, keep_first = TRUE){
+  
+  one_hot_cols <- data.frame(model.matrix(~data[[feature]]+0))
+  colnames(one_hot_cols) <- paste0(feature, "_", colnames(one_hot_cols))
+  
+  new_data <- cbind(data, one_hot_cols)
+  new_data[, feature] <- NULL
+  
+  if(!keep_first){
+    new_data <- new_data[, -1]
+  }
+  
+  return(new_data)
+}
+```
+
+```{r}
+new_df_onehot <- new_df
+
+for (col in names(new_df_onehot)[sapply(new_df_onehot, is.character)]) {
+  new_df_onehot <- one_hot_encoder(new_df_onehot, col)
+}
+
+head(new_df_onehot)
+```
+**The code defines a function called one_hot_encoder that performs one-hot encoding on a given feature column in a data frame. One-hot encoding is a common technique used in data preprocessing to convert categorical data into a binary matrix format that machine learning algorithms can handle.\n The function takes in three arguments: data (the data frame), feature (the name of the column to be one-hot encoded), and keep_first (a logical argument specifying whether or not to keep the first one-hot encoded column).\n The function first creates a binary matrix using model.matrix() by converting the categorical feature into multiple columns of 0's and 1's, where each column represents a unique category. The resulting matrix is then bound to the original data frame using cbind(), and the original feature column is removed using new_data[, feature] <- NULL.\n If keep_first is FALSE, the first one-hot encoded column (which represents the first category of the original feature column) is removed using new_data[, -1].\n The code then applies the one_hot_encoder function to all the character columns in the new_df data frame using a for loop, and saves the resulting data frame in new_df_onehot. Finally, the first six rows of the resulting data frame are printed using head().**
+
+```{r}
+library(caret)
+library(glmnet)
+set.seed(232)
+
+X <- new_df_onehot[,!(names(new_df_onehot) == "price")]
+y <- new_df_onehot$price
+
+train_index <- createDataPartition(y, p = 0.7, list = FALSE)
+X_train <- X[train_index,]
+X_test <- X[-train_index,]
+y_train <- y[train_index]
+y_test <- y[-train_index]
+```
+**This code block sets the seed for the random number generator, which ensures that the same sequence of random numbers is generated every time the code is run. Then, the predictor variables (stored in the X data frame) and the response variable (price) are extracted from the preprocessed data (new_df_onehot).\n Next, the createDataPartition() function from the caret package is used to randomly split the data into training and test sets. Specifically, 70% of the rows are assigned to the training set, while the remaining 30% are assigned to the test set. The list argument is set to FALSE so that the function returns a numeric vector of indices rather than a list of indices.\n Finally, the training and test sets are created using the indices generated by createDataPartition(), and the predictor and response variables are separated for each set. The training set consists of X_train and y_train, while the test set consists of X_test and y_test.**
+
+```{r}
+set.seed(232)
+# Fit linear regression model on the training data
+model <- lm(price ~ ., data = new_df_onehot[train_index,])
+
+# Make predictions on the testing data
+y_pred <- predict(model, X_test)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+**The code is performing linear regression on the training data and then using the model to predict the target variable (price) on the testing data. The predict function is used to make these predictions. However, when running the code, a warning message is displayed indicating that the fit of the model is rank-deficient, meaning that some of the independent variables in the model may be linearly dependent on each other.\n After making the predictions, the code calculates the mean squared error (MSE), root mean squared error (RMSE), and R-squared value to evaluate the performance of the model on the testing data. The RMSE is a measure of how far off the predictions are from the actual values, with a lower RMSE indicating better performance. The R-squared value indicates the proportion of variance in the target variable that can be explained by the independent variables in the model, with a higher R-squared value indicating a better fit of the model to the data. The output shows that the RMSE is 2.26246, the R-squared value is 0.9332848, and the MSE is 5.118724. These values indicate that the model has a good fit to the data and performs well in making predictions of the price variable.**
+
+```{r}
+set.seed(232)
+# Fit the Lasso regression model on the training data
+lasso_model <- glmnet(X_train, y_train, alpha = 1)
+
+# Convert X_test to matrix object
+X_test_matrix <- as.matrix(X_test)
+
+# Make predictions on the testing data
+y_pred <- predict(lasso_model, newx = X_test_matrix)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+**The code fits a Lasso regression model on the training data using the glmnet function from the glmnet package with alpha set to 1 (which means Lasso regression is used). The model is then used to make predictions on the testing data using the predict function, and the performance of the model is evaluated using mean squared error (MSE), root mean squared error (RMSE), and the coefficient of determination (R-squared) measures.\n The output shows that the Lasso model has a higher RMSE (4.006589) and MSE (16.05275) compared to the linear regression model. Also, the warning message "the standard deviation is zero" appears when calculating R-squared due to perfect correlation between the predicted and actual values. Overall, the Lasso model does not perform as well as the linear regression model on this particular dataset.**
+```{r}
+library(caret)
+set.seed(232)
+
+# Load data
+data <- new_df_onehot
+X <- data[, !(names(data) == "price")]
+y <- data$price
+
+# Define training control
+train_control <- trainControl(method = "cv",  # Cross-validation method
+                              number = 10,    # Number of folds
+                              verboseIter = TRUE,  # Print progress
+                              returnResamp = "all",  # Return all resamples
+                              savePredictions = TRUE)  # Save predictions for later use
+
+# Train linear regression model using 10-fold cross-validation
+model <- train(X, y,
+               method = "lm",  # Linear regression
+               trControl = train_control)
+
+# Print cross-validation results
+print(model)
+
+# Extract performance metrics
+mse <- mean(model$resample$RMSE^2)
+rmse <- mean(model$resample$RMSE)
+r_squared <- mean(model$resample$Rsquared)
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+**The code uses the caret package to perform 10-fold cross-validation to train a linear regression model on the "new_df_onehot" dataset. The data is split into 10 subsets, with the model trained on 9 of them and tested on the remaining subset. This process is repeated 10 times so that each subset is used once for testing. The performance metrics of the model, including root mean squared error (RMSE), mean squared error (MSE), and R-squared, are calculated using the average of the results of the 10 iterations.\n The output shows the results of the cross-validation process, including the number of samples, the number of predictors, and the summary of the sample sizes for each iteration. The resampling results show that the model has an RMSE of 2.263134, an R-squared of 0.9334001, and a mean absolute error (MAE) of 1.677361. These performance metrics suggest that the model has good predictive power and can accurately predict the price of a new house given the available features.**
+```{r}
+library(rpart)
+set.seed(232)
+
+# Convert the matrix to a data frame
+train_df <- as.data.frame(new_df_onehot[train_index,])
+test_df <- as.data.frame(new_df_onehot[-train_index,])
+
+# Create a decision tree model on the training data
+model <- rpart(price ~ ., data = train_df)
+
+# Make predictions on the testing data
+y_pred <- predict(model, data=test_df)
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- 1 - (sum((y_test - y_pred)^2) / sum((y_test - mean(y_test))^2))
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+
+# Plot the decision tree
+plot(model, main="Decision Tree", uniform=TRUE)
+text(model, use.n=TRUE, all=TRUE, cex=.8)
+```
+
+
+**This code trains a decision tree model on the "new_df_onehot" dataset using the rpart package in R. The data is split into training and testing sets using the "train_index" variable. The model is trained on the training set using the "rpart" function, with the target variable "price" and all other variables as predictors.\n The code then uses the model to make predictions on the testing data, and calculates the performance metrics of the model using the predicted and actual target variable values. The performance metrics calculated are the mean squared error (MSE), root mean squared error (RMSE), and R-squared.\n The code generates a plot of the decision tree model. The "plot" function is used to generate the plot, and the "text" function adds text to the plot to label the nodes.\n In the analysis, the coefficient of determination (R-squared) is a statistical measure of how well the regression model fits the observed data. R-squared takes a value between 0 and 1, with 1 indicating that the regression model perfectly fits the data and 0 indicating that the model does not fit the data at all.\n In the given output, the R-squared value is negative, which means that the regression model fits the data worse than a horizontal line. This indicates that the model is not able to capture the underlying relationship between the independent variables and the dependent variable in the data. There could be several reasons for this, such as incorrect model specification, insufficient or irrelevant predictors, or high levels of noise or randomness in the data. In such cases, it may be necessary to revisit the data and the model to identify and address the issues before making any conclusions or predictions based on the model. It is also important to note that R-squared alone should not be the sole criterion for evaluating the performance of a regression model, and other metrics such as root mean squared error (RMSE) and mean absolute error (MAE) should also be considered to gain a comprehensive understanding of the model's performance.**
+```{r}
+# Load required packages
+library(xgboost)
+library(caret)
+
+# Set seed for reproducibility
+set.seed(232)
+
+# Define xgboost parameters
+params <- list(
+  objective = "reg:squarederror", # regression task with squared loss
+  eta = 0.3, # learning rate
+  max_depth = 6, # maximum depth of tree
+  min_child_weight = 1, # minimum sum of instance weight needed in a child
+  subsample = 0.8, # subsample ratio of the training instances
+  colsample_bytree = 0.8 # subsample ratio of columns when constructing each tree
+)
+
+# Train the xgboost model
+model <- xgboost(data = as.matrix(X_train), label = y_train, params = params, nrounds = 100)
+
+# Make predictions on the testing data
+y_pred <- predict(model, as.matrix(X_test))
+
+# Evaluate the model's performance on the testing data
+mse <- mean((y_test - y_pred)^2)
+rmse <- sqrt(mse)
+r_squared <- cor(y_pred, y_test)^2
+
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", r_squared, "\n")
+cat("MSE:", mse, "\n")
+```
+
+**This code trains an xgboost regression model on the training data and evaluates its performance on the testing data. The xgboost model is a gradient boosting algorithm that uses decision trees as weak learners.\n The model is trained using the xgboost function, with the training data X_train and labels y_train, as well as specified hyperparameters in the params argument. The model is then used to predict on the testing data X_test using the predict function.\n The model's performance is evaluated using three metrics: RMSE (Root Mean Squared Error), R-squared, and MSE (Mean Squared Error). RMSE measures the average distance between the predicted values and the actual values, while R-squared measures the proportion of variance in the dependent variable that is predictable from the independent variables. MSE is another way of measuring the average distance between the predicted values and the actual values, but it places more emphasis on large errors.\n In this case, the xgboost model performed well, as indicated by the low RMSE and MSE values and the high R-squared value. The RMSE of 1.65 indicates that, on average, the predicted values are about 1.65 units away from the actual values. The R-squared of 0.96 suggests that the independent variables explain 96% of the variance in the dependent variable. The MSE of 2.74 is a measure of the average squared distance between the predicted values and the actual values.\n In this code, we trained an XGBoost model on a dataset using the caret package in R. XGBoost is a popular machine learning algorithm for regression and classification tasks. We used the training data to fit the model and then used the testing data to evaluate its performance.\n The XGBoost model achieved an RMSE of 1.6546, which indicates that the average difference between the predicted and actual prices is 1.6546. The R-squared value of 0.9643 indicates that the model can explain 96.43% of the variation in the target variable. The lower the RMSE and the higher the R-squared value, the better the model's performance.\n Based on the analysis of the rides dataset, we have created and compared three different models: linear regression, decision tree, and XGBoost.\n Overall, the XGBoost model resulted in an RMSE of 1.65 and an R-squared of 0.96, indicating the best fit to the data compared to the other two models.\n Therefore, we recommend using the XGBoost model for predicting the price of rides based on the given features. The model has a high degree of accuracy, with an RMSE of 1.65 and an R-squared of 0.96, indicating that the model can predict the price of rides with good accuracy.**
